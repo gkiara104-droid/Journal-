@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#353B56">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Feel Good">
+<link rel="manifest" href="#" id="pwa-manifest">
+<link rel="apple-touch-icon" href="#" id="apple-icon">
+<title>Feel Good Journal</title>
+<script>
+(function initPWA() {
+  const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <rect width="512" height="512" rx="100" fill="#353B56"/>
+    <radialGradient id="g" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#FBB45E" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#353B56" stop-opacity="0"/>
+    </radialGradient>
+    <rect width="512" height="512" rx="100" fill="url(#g)"/>
+    <rect x="130" y="110" width="252" height="300" rx="12" fill="#F5EFE8"/>
+    <rect x="130" y="110" width="36" height="300" rx="8" fill="#C99379"/>
+    <rect x="155" y="110" width="11" height="300" fill="#B8856A" opacity="0.4"/>
+    <line x1="196" y1="175" x2="358" y2="175" stroke="#7D7585" stroke-width="3" stroke-linecap="round" opacity="0.3"/>
+    <line x1="196" y1="210" x2="358" y2="210" stroke="#7D7585" stroke-width="3" stroke-linecap="round" opacity="0.22"/>
+    <line x1="196" y1="245" x2="330" y2="245" stroke="#7D7585" stroke-width="3" stroke-linecap="round" opacity="0.22"/>
+    <line x1="196" y1="280" x2="350" y2="280" stroke="#7D7585" stroke-width="3" stroke-linecap="round" opacity="0.18"/>
+    <circle cx="340" cy="150" r="22" fill="none" stroke="#FBB45E" stroke-width="5" opacity="0.9"/>
+    <circle cx="340" cy="150" r="10" fill="#FBB45E" opacity="0.75"/>
+    <g transform="rotate(-38,368,355)">
+      <rect x="362" y="288" width="10" height="68" rx="5" fill="#FBB45E"/>
+      <polygon points="367,288 358,312 376,312" fill="#C99379"/>
+      <rect x="363" y="350" width="8" height="12" rx="2" fill="#251211" opacity="0.55"/>
+    </g>
+    <circle cx="176" cy="388" r="5" fill="#FBB45E" opacity="0.55"/>
+    <circle cx="418" cy="378" r="4" fill="#C99379" opacity="0.4"/>
+    <circle cx="94" cy="198" r="6" fill="#FBB45E" opacity="0.2"/>
+  </svg>`;
+
+  const iconBlob = new Blob([ICON_SVG], { type: 'image/svg+xml' });
+  const iconUrl  = URL.createObjectURL(iconBlob);
+  document.getElementById('apple-icon').href = iconUrl;
+
+  const manifest = {
+    name: 'Feel Good Journal',
+    short_name: 'Feel Good',
+    description: 'Tu diario personal de bienestar — reflexión, emociones, gratitud y metas.',
+    start_url: './',
+    display: 'standalone',
+    background_color: '#353B56',
+    theme_color: '#353B56',
+    orientation: 'portrait',
+    lang: 'es',
+    icons: [
+      { src: iconUrl, sizes: '192x192', type: 'image/svg+xml' },
+      { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+    ]
+  };
+  const mBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  document.getElementById('pwa-manifest').href = URL.createObjectURL(mBlob);
+
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+      const CACHE = 'fgj-v2';
+      self.addEventListener('install', e => {
+        self.skipWaiting();
+        e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/']).catch(()=>{})));
+      });
+      self.addEventListener('activate', e => {
+        e.waitUntil(caches.keys().then(keys =>
+          Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+        ).then(() => self.clients.claim()));
+      });
+      self.addEventListener('fetch', e => {
+        e.respondWith(
+          caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+            if (res && res.status === 200) {
+              const clone = res.clone();
+              caches.open(CACHE).then(c => c.put(e.request, clone));
+            }
+            return res;
+          }).catch(() => caches.match('/')))
+        );
+      });
+    `;
+    const swBlob = new Blob([swCode], { type: 'application/javascript' });
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+  }
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #353B56;
+    --gray:   #7D7585;
+    --yellow: #FBB45E;
+    --sand:   #C99379;
+    --dark:   #251211;
+    --cream:  #F5EFE8;
+    --white:  #FDFAF6;
+    --border: rgba(53,59,86,0.13);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Jost',sans-serif;
+    background:var(--cream);
+    color:var(--dark);
+    min-height:100vh;
+    font-weight:300;
+  }
+  body::after {
+    content:'';
+    position:fixed; inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events:none; z-index:999; opacity:0.5;
+  }
+  .app { max-width:480px; margin:0 auto; padding-bottom:90px; min-height:100vh; }
+
+  /* HEADER */
+  header { padding:40px 28px 22px; border-bottom:1px solid var(--border); }
+  .header-top { display:flex; justify-content:space-between; align-items:flex-end; }
+  .logo { font-family:'Cormorant Garamond',serif; font-size:1.9rem; font-weight:300; font-style:italic; color:var(--navy); letter-spacing:0.02em; line-height:1; }
+  .date-info { text-align:right; }
+  .date-day { font-family:'Cormorant Garamond',serif; font-size:2.6rem; font-weight:300; color:var(--yellow); line-height:1; }
+  .date-rest { font-size:0.65rem; font-weight:400; letter-spacing:0.14em; text-transform:uppercase; color:var(--gray); margin-top:2px; }
+
+  /* NAV */
+  nav { display:flex; border-bottom:1px solid var(--border); background:var(--white); }
+  .nav-btn { flex:1; padding:14px 6px; background:none; border:none; font-family:'Jost',sans-serif; font-size:0.65rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray); cursor:pointer; transition:all 0.25s; position:relative; }
+  .nav-btn::after { content:''; position:absolute; bottom:0; left:20%; right:20%; height:2px; background:var(--yellow); transform:scaleX(0); transition:transform 0.25s; }
+  .nav-btn.active { color:var(--navy); }
+  .nav-btn.active::after { transform:scaleX(1); }
+
+  /* SECTIONS */
+  .section { display:none; padding:28px 24px; animation:fadeUp 0.3s ease; }
+  .section.active { display:block; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* TYPOGRAPHY */
+  .section-label { font-size:0.62rem; font-weight:500; letter-spacing:0.15em; text-transform:uppercase; color:var(--sand); margin-bottom:8px; }
+  .section-title { font-family:'Cormorant Garamond',serif; font-size:1.65rem; font-weight:400; color:var(--navy); margin-bottom:24px; line-height:1.2; }
+
+  /* CARD */
+  .card { background:var(--white); border:1px solid var(--border); border-radius:3px; padding:24px; margin-bottom:16px; }
+  .card-label { font-size:0.62rem; font-weight:500; letter-spacing:0.15em; text-transform:uppercase; color:var(--sand); margin-bottom:12px; }
+
+  /* PROMPTS */
+  .prompt-number { font-family:'Cormorant Garamond',serif; font-size:5rem; font-weight:300; color:var(--yellow); opacity:0.35; line-height:1; margin-bottom:-14px; }
+  .prompt-question { font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:400; font-style:italic; color:var(--navy); line-height:1.4; margin-bottom:20px; }
+  .journal-textarea { width:100%; min-height:150px; border:none; border-top:1px solid var(--border); padding:16px 0; font-family:'Cormorant Garamond',serif; font-size:1.15rem; font-weight:300; color:var(--dark); resize:none; outline:none; background:transparent; line-height:2; background-image:repeating-linear-gradient(transparent,transparent 31px,rgba(125,117,133,0.1) 31px,rgba(125,117,133,0.1) 32px); }
+  .journal-textarea::placeholder { color:rgba(125,117,133,0.4); font-style:italic; }
+  .prompt-actions { display:flex; gap:10px; margin-top:16px; padding-top:16px; border-top:1px solid var(--border); }
+
+  /* BUTTONS */
+  .btn { padding:11px 20px; border:1px solid var(--border); border-radius:2px; font-family:'Jost',sans-serif; font-size:0.68rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; cursor:pointer; transition:all 0.2s; }
+  .btn-outline { background:transparent; color:var(--navy); border-color:var(--navy); }
+  .btn-outline:hover { background:var(--navy); color:var(--white); }
+  .btn-fill { background:var(--navy); color:var(--white); border-color:var(--navy); flex:1; }
+  .btn-fill:hover { background:var(--dark); }
+  .btn-accent { background:var(--yellow); color:var(--dark); border-color:var(--yellow); }
+  .btn-accent:hover { background:var(--sand); border-color:var(--sand); color:var(--white); }
+
+  /* ENTRIES */
+  .entry-item { padding:16px 0; border-bottom:1px solid var(--border); }
+  .entry-item:last-child { border-bottom:none; }
+  .entry-prompt { font-size:0.68rem; letter-spacing:0.07em; color:var(--sand); margin-bottom:6px; font-weight:500; }
+  .entry-text { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-weight:300; line-height:1.6; color:var(--dark); }
+  .entry-date { font-size:0.62rem; color:var(--gray); margin-top:6px; letter-spacing:0.06em; }
+
+  /* EMOTIONS */
+  .emotion-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:20px; }
+  .emotion-btn { padding:14px 6px; border:1px solid var(--border); border-radius:3px; background:var(--white); cursor:pointer; transition:all 0.2s; text-align:center; }
+  .emotion-symbol { display:block; font-size:1.3rem; margin-bottom:4px; color:var(--navy); }
+  .emotion-label { display:block; font-size:0.58rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray); }
+  .emotion-btn:hover, .emotion-btn.selected { border-color:var(--navy); background:rgba(53,59,86,0.04); }
+
+  .slider-wrap { margin-bottom:20px; }
+  .slider-label { display:flex; justify-content:space-between; font-size:0.68rem; font-weight:400; letter-spacing:0.07em; color:var(--gray); margin-bottom:8px; }
+  .slider-label span:last-child { color:var(--navy); font-weight:500; }
+  input[type=range] { -webkit-appearance:none; width:100%; height:2px; background:var(--border); outline:none; border:none; cursor:pointer; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--navy); cursor:pointer; }
+
+  .field { width:100%; border:none; border-bottom:1px solid var(--border); padding:10px 0; font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-weight:300; color:var(--dark); background:transparent; outline:none; transition:border-color 0.2s; }
+  .field:focus { border-bottom-color:var(--navy); }
+  .field::placeholder { color:rgba(125,117,133,0.4); font-style:italic; }
+
+  .log-item { display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid var(--border); }
+  .log-item:last-child { border-bottom:none; }
+  .log-symbol { font-size:1.2rem; width:28px; text-align:center; color:var(--navy); }
+  .log-info { flex:1; }
+  .log-name { font-size:0.78rem; font-weight:500; color:var(--navy); letter-spacing:0.04em; }
+  .log-note { font-family:'Cormorant Garamond',serif; font-size:0.95rem; color:var(--gray); font-style:italic; margin-top:1px; }
+  .log-bar { width:48px; height:2px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .log-fill { height:100%; background:var(--yellow); border-radius:2px; }
+  .log-time { font-size:0.62rem; color:var(--gray); letter-spacing:0.05em; }
+
+  /* GRATITUD */
+  .gratitud-hero { text-align:center; padding:16px 0 28px; }
+  .gratitud-num { font-family:'Cormorant Garamond',serif; font-size:7rem; font-weight:300; color:var(--yellow); line-height:1; }
+  .gratitud-sub { font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--gray); margin-top:4px; }
+  .add-row { display:flex; gap:10px; align-items:flex-end; margin-bottom:24px; }
+  .add-row .field { flex:1; }
+  .add-icon-btn { width:36px; height:36px; border:1px solid var(--navy); border-radius:2px; background:var(--navy); color:var(--white); font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; line-height:1; padding-bottom:1px; }
+  .add-icon-btn:hover { background:var(--dark); }
+  .gratitud-items { list-style:none; }
+  .grat-item { display:flex; align-items:flex-start; gap:14px; padding:14px 0; border-bottom:1px solid var(--border); animation:fadeUp 0.25s ease; }
+  .grat-n { font-family:'Cormorant Garamond',serif; font-size:1rem; color:var(--sand); min-width:18px; padding-top:1px; }
+  .grat-text { flex:1; font-family:'Cormorant Garamond',serif; font-size:1.15rem; font-weight:300; color:var(--dark); line-height:1.4; }
+  .del-btn { background:none; border:none; cursor:pointer; color:rgba(125,117,133,0.3); font-size:0.85rem; transition:color 0.2s; padding-top:2px; }
+  .del-btn:hover { color:var(--gray); }
+
+  .love-card { background:var(--navy); border-radius:3px; padding:24px; margin-top:24px; }
+  .love-label { font-size:0.58rem; letter-spacing:0.15em; text-transform:uppercase; color:rgba(251,180,94,0.6); margin-bottom:10px; }
+  .love-text { font-family:'Cormorant Garamond',serif; font-size:1.3rem; font-style:italic; color:var(--white); line-height:1.5; font-weight:300; }
+
+  /* METAS */
+  .meta-form { display:flex; flex-direction:column; gap:14px; margin-bottom:24px; }
+  .form-row { display:flex; gap:10px; align-items:flex-end; }
+  select.field { cursor:pointer; flex:1; -webkit-appearance:none; }
+  .meta-item { padding:18px 0; border-bottom:1px solid var(--border); animation:fadeUp 0.25s ease; }
+  .meta-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .meta-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .meta-name-text { flex:1; font-size:0.95rem; font-weight:400; color:var(--navy); }
+  .meta-cat-tag { font-size:0.58rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray); }
+  .progress-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+  .prog-track { flex:1; height:2px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .prog-fill { height:100%; border-radius:2px; transition:width 0.4s ease; }
+  .prog-pct { font-size:0.72rem; font-weight:500; color:var(--gray); min-width:32px; text-align:right; }
+  .meta-controls { display:flex; gap:8px; }
+  .meta-btn { padding:6px 12px; border:1px solid var(--border); border-radius:2px; font-family:'Jost',sans-serif; font-size:0.62rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; background:transparent; color:var(--gray); transition:all 0.2s; }
+  .meta-btn:hover { border-color:var(--navy); color:var(--navy); }
+  .meta-btn.done-btn { background:var(--navy); color:var(--white); border-color:var(--navy); }
+
+  /* MI DÍA - mood */
+  .hoy-mood-btn { flex:1; padding:10px 4px; border:1px solid var(--border); border-radius:3px; background:var(--white); cursor:pointer; font-size:1.1rem; color:var(--gray); transition:all 0.2s; text-align:center; font-family:'Cormorant Garamond',serif; }
+  .hoy-mood-btn:hover, .hoy-mood-btn.selected { border-color:var(--navy); background:rgba(53,59,86,0.05); color:var(--navy); }
+
+  /* HISTORIAL */
+  .hoy-entry { padding:18px 0; border-bottom:1px solid var(--border); animation:fadeUp 0.25s ease; }
+  .hoy-entry:last-child { border-bottom:none; }
+  .hoy-entry-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .hoy-entry-date { font-size:0.62rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--sand); }
+  .hoy-entry-mood { font-size:1rem; color:var(--navy); }
+  .hoy-entry-titulo { font-family:'Cormorant Garamond',serif; font-size:1.2rem; font-weight:400; color:var(--navy); margin-bottom:6px; }
+  .hoy-entry-texto { font-family:'Cormorant Garamond',serif; font-size:1rem; font-weight:300; color:var(--gray); line-height:1.6; font-style:italic; }
+  .empty { padding:28px 0; text-align:center; }
+  .empty p { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-style:italic; color:var(--gray); }
+
+  /* TOAST */
+  .toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(6px); background:var(--dark); color:var(--cream); padding:10px 22px; border-radius:2px; font-size:0.72rem; font-weight:400; letter-spacing:0.08em; opacity:0; transition:all 0.25s; z-index:1000; white-space:nowrap; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* BOTTOM NAV */
+  .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:var(--white); border-top:1px solid var(--border); display:flex; z-index:50; }
+  .bnav { flex:1; padding:12px 4px 16px; background:none; border:none; font-family:'Jost',sans-serif; font-size:0.58rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray); cursor:pointer; transition:color 0.2s; display:flex; flex-direction:column; align-items:center; gap:5px; }
+  .bnav-dot { width:4px; height:4px; border-radius:50%; background:transparent; transition:background 0.2s; }
+  .bnav.active { color:var(--navy); }
+  .bnav.active .bnav-dot { background:var(--yellow); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="header-top">
+      <div class="logo">Feel Good Journal</div>
+      <div class="date-info">
+        <div class="date-day" id="dayNum"></div>
+        <div class="date-rest" id="dateRest"></div>
+      </div>
+    </div>
+  </header>
+
+  <nav>
+    <button class="nav-btn active" onclick="switchTab('prompts',this)">Reflexión</button>
+    <button class="nav-btn" onclick="switchTab('emociones',this)">Emociones</button>
+    <button class="nav-btn" onclick="switchTab('gratitud',this)">Gratitud</button>
+    <button class="nav-btn" onclick="switchTab('metas',this)">Metas</button>
+    <button class="nav-btn" onclick="switchTab('hoy',this)">Mi día</button>
+  </nav>
+
+  <!-- PROMPTS -->
+  <div class="section active" id="sec-prompts">
+    <div class="card">
+      <div class="card-label">Prompt del día</div>
+      <div class="prompt-number" id="promptNum"></div>
+      <div class="prompt-question" id="promptText"></div>
+      <textarea class="journal-textarea" id="promptAnswer" placeholder="Escribe lo que sientes..."></textarea>
+      <div class="prompt-actions">
+        <button class="btn btn-outline" onclick="newPrompt()">Cambiar</button>
+        <button class="btn btn-fill" onclick="saveEntry()">Guardar entrada</button>
+      </div>
+    </div>
+    <div id="savedSection" style="display:none">
+      <div class="card-label" style="margin-top:4px">Entradas guardadas</div>
+      <div class="card">
+        <div id="savedList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMOCIONES -->
+  <div class="section" id="sec-emociones">
+    <div class="section-label">Registro emocional</div>
+    <div class="section-title">¿Cómo estás ahora mismo?</div>
+    <div class="emotion-grid" id="emotionGrid"></div>
+    <div class="slider-wrap">
+      <div class="slider-label">
+        <span>Intensidad</span>
+        <span id="intensityVal">5 / 10</span>
+      </div>
+      <input type="range" min="1" max="10" value="5" id="intensitySlider" oninput="document.getElementById('intensityVal').textContent=this.value+' / 10'">
+    </div>
+    <input class="field" placeholder="Añade una nota..." id="emotionNote" style="margin-bottom:20px">
+    <button class="btn btn-fill" style="width:100%" onclick="logEmotion()">Registrar</button>
+    <div id="emotionLogSection" style="display:none; margin-top:24px">
+      <div class="card-label">Registro de hoy</div>
+      <div class="card" id="emotionLog"></div>
+    </div>
+  </div>
+
+  <!-- GRATITUD -->
+  <div class="section" id="sec-gratitud">
+    <div class="gratitud-hero">
+      <div class="gratitud-num" id="gratitudCount">0</div>
+      <div class="gratitud-sub">momentos de gratitud hoy</div>
+    </div>
+    <div class="add-row">
+      <input class="field" id="gratitudInput" placeholder="Hoy estoy agradecida/o por..." onkeypress="if(event.key==='Enter') addGratitud()">
+      <button class="add-icon-btn" onclick="addGratitud()">+</button>
+    </div>
+    <ul class="gratitud-items" id="gratitudList"></ul>
+    <div class="love-card">
+      <div class="love-label">Recuérdalo</div>
+      <div class="love-text" id="loveMessage"></div>
+    </div>
+  </div>
+
+  <!-- MI DÍA -->
+  <div class="section" id="sec-hoy">
+    <div class="section-label">Diario</div>
+    <div class="section-title">¿Qué pasó hoy?</div>
+    <div class="card">
+      <div class="card-label" id="hoyDateLabel"></div>
+      <input class="field" id="hoyTitulo" placeholder="Un título para este día..." style="margin-bottom:14px">
+      <textarea class="journal-textarea" id="hoyTexto" style="min-height:130px" placeholder="Describe lo más importante que viviste hoy..."></textarea>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div class="card-label" style="margin-bottom:10px">¿Cómo fue el día?</div>
+        <div id="hoyMoodRow" style="display:flex;gap:8px;margin-bottom:6px"></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.62rem;letter-spacing:0.06em;color:var(--gray)">
+          <span>Difícil</span><span>Normal</span><span>Genial</span>
+        </div>
+      </div>
+      <div class="prompt-actions" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <button class="btn btn-fill" onclick="saveHoy()">Guardar día</button>
+      </div>
+    </div>
+    <div id="hoyHistorial"></div>
+  </div>
+
+  <!-- METAS -->
+  <div class="section" id="sec-metas">
+    <div class="section-label">Intenciones</div>
+    <div class="section-title">¿Hacia dónde vas?</div>
+    <div class="meta-form">
+      <input class="field" id="metaName" placeholder="Escribe tu meta o intención...">
+      <div class="form-row">
+        <select class="field" id="metaCategory">
+          <option value="personal">Personal</option>
+          <option value="salud">Salud</option>
+          <option value="creatividad">Creatividad</option>
+          <option value="relaciones">Relaciones</option>
+          <option value="trabajo">Trabajo / Estudio</option>
+        </select>
+        <button class="btn btn-accent" onclick="addMeta()">Añadir</button>
+      </div>
+    </div>
+    <div id="metaList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="bottom-nav">
+  <button class="bnav active" onclick="switchTab('prompts',document.querySelectorAll('.nav-btn')[0])"><div class="bnav-dot"></div>Reflexión</button>
+  <button class="bnav" onclick="switchTab('emociones',document.querySelectorAll('.nav-btn')[1])"><div class="bnav-dot"></div>Emociones</button>
+  <button class="bnav" onclick="switchTab('gratitud',document.querySelectorAll('.nav-btn')[2])"><div class="bnav-dot"></div>Gratitud</button>
+  <button class="bnav" onclick="switchTab('metas',document.querySelectorAll('.nav-btn')[3])"><div class="bnav-dot"></div>Metas</button>
+  <button class="bnav" onclick="switchTab('hoy',document.querySelectorAll('.nav-btn')[4])"><div class="bnav-dot"></div>Mi día</button>
+</div>
+
+<script>
+const prompts = [
+  "¿Qué tres cosas pequeñas te hicieron sonreír hoy?","¿Cómo te estás cuidando esta semana?","Describe un momento en que te sentiste completamente tú misma/o.","¿Qué consejo le darías a tu yo de hace un año?","¿Qué estás dejando ir en este momento de tu vida?","¿Cuál fue el momento más bonito de tu día?","¿Qué necesitas escuchar hoy?","¿De qué te sientes orgullosa/o últimamente?","¿Qué te está enseñando esta etapa de tu vida?","¿Cómo quieres sentirte al final de esta semana?","Describe a alguien que admires y qué cualidades ves en ella/él.","¿Qué te gustaría hacer más seguido?","Escribe una carta corta a tu cuerpo con amor.","¿Qué significa descansar para ti?","¿Qué emociones has estado ignorando últimamente?","¿Cuál ha sido tu mayor aprendizaje este mes?","¿Qué momento del pasado recuerdas con cariño?","Si pudieras cambiar algo de esta semana, ¿qué sería?","¿En qué momento del día te sientes más viva/o?","¿Qué hábito pequeño quieres incorporar en tu vida?","Escribe sobre algo que te da miedo perder.","¿Quién ha tenido un impacto positivo en ti esta semana?","¿Qué parte de ti misma/o necesitas aceptar hoy?","¿Cómo describirías tu estado de ánimo en tres palabras?","¿Qué es algo que siempre pospones y por qué?","Escribe sobre un lugar que te genere paz.","¿Qué conversación pendiente tienes y cómo te hace sentir?","¿Qué te inspira en este momento de tu vida?","¿Cómo te tratas cuando cometes un error?","¿Qué necesita tu cuerpo que no le estás dando?","¿Qué historia te estás contando sobre ti misma/o?","¿En qué área de tu vida sientes que estás creciendo?","¿Qué límite necesitas poner hoy?","¿Qué te hace sentir más creativa/o?","Escribe sobre una meta que cumpliste y cómo te sentiste.","¿Qué es lo más importante para ti ahora mismo?","¿Cómo cambiaría tu día si te trataras con más amabilidad?","¿Qué estás aprendiendo sobre el amor propio?","¿Cuándo fue la última vez que hiciste algo solo/a para ti?","¿Qué patrón de comportamiento quieres romper?","¿Qué versión de ti misma/o estás construyendo?","Escribe sobre una persona que te haya enseñado algo valioso.","¿Qué actividad te hace perder la noción del tiempo?","¿Cómo te sientes con respecto a tu futuro?","¿Qué es algo en lo que eres genuinamente buena/o?","¿Qué necesita tu mente que no le estás dando?","Escribe sobre un momento en que superaste algo difícil.","¿Qué parte de tu rutina te nutre y cuál te drena?","¿Cómo quieres que sea tu vida dentro de cinco años?","¿Qué es algo que das por sentado y mereces agradecer?","¿Qué emoción has sentido más esta semana?","¿En qué relación necesitas invertir más energía?","Escribe sobre algo que cambió tu perspectiva recientemente.","¿Qué te resulta difícil pedir?","¿Cómo defines el éxito para ti en este momento?","¿Qué es algo que haces por obligación y podrías soltar?","¿Cuál es tu mayor fortaleza que sueles ignorar?","¿Qué te hace sentir conectada/o contigo misma/o?","Escribe sobre una decisión de la que estés orgullosa/o.","¿Qué aspectos de tu vida están alineados con tus valores?","¿Qué quieres soltar antes de que termine el mes?","¿Cuándo fue la última vez que te sentiste verdaderamente libre?","¿Qué te resulta más difícil perdonar: a otros o a ti misma/o?","Escribe sobre lo que más te gusta de tu vida actual.","¿Qué necesitas decirle a alguien y no has dicho?","¿Cómo reconoces cuando necesitas descanso?","¿Qué es algo que siempre quisiste intentar y aún no has hecho?","Escribe sobre un sueño que tienes y lo que significa para ti.","¿Qué parte de tu pasado te está definiendo más de lo que debería?","¿Cómo es tu relación con el dinero?","¿Qué es lo que más valoras en una amistad?","Escribe sobre una época de tu vida que recuerdes con nostalgia.","¿Cuál es tu forma preferida de expresar amor?","¿Qué te gustaría que la gente supiera de ti?","¿En qué momento te sientes más segura/o de ti misma/o?","¿Qué cosa pequeña hiciste hoy por alguien más?","Escribe sobre algo que hayas aprendido de una ruptura o pérdida.","¿Cómo te relacionas con la incertidumbre?","¿Qué estás haciendo para acercarte a quien quieres ser?","¿Qué es lo que más te cuesta soltar del pasado?","Describe una versión de ti misma/o con la que te sientas en paz.","¿Qué es algo que te sorprendió de ti este año?","¿Qué límite cruzaron contigo y cómo respondiste?","¿Qué te daría más paz en este momento?","Escribe sobre cómo ha cambiado tu forma de quererte.","¿Qué significa para ti ser auténtica/o?","¿Qué te impide ser completamente honesta/o contigo misma/o?","¿Cómo describirías tu relación con tu cuerpo?","¿Qué es algo que haces bien y rara vez te das crédito?","Escribe sobre una elección que cambió el rumbo de tu vida.","¿Qué te genera ansiedad con más frecuencia?","¿Cómo afecta tu estado de ánimo a las personas que te rodean?","¿Qué necesita tu alma que no estás atendiendo?","Escribe sobre un momento en que te sentiste completamente amada/o.","¿Qué es lo que más disfrutas de estar sola/o?","¿Qué aspecto de tu vida está listo para un cambio?","¿Qué harías hoy si no tuvieras miedo al juicio de otros?","Escribe sobre algo que te resulte difícil de aceptar.","¿Cuál es el pensamiento que más repites sobre ti misma/o?","¿Qué es algo que empezaste y no terminaste? ¿Por qué?","¿Cómo influye tu entorno en tu bienestar?","Escribe sobre un sueño que hayas abandonado y si fue la decisión correcta.","¿Qué parte de tu vida sientes que no es tuya?","¿Qué es lo que más te cuesta recibir?","¿Cuándo fue la última vez que lloraste y por qué?","Escribe sobre una persona que ya no está en tu vida y lo que te enseñó.","¿Qué es lo que más extrañas de una etapa anterior de tu vida?","¿Cómo te sientes cuando pides ayuda?","¿Qué promesa te hiciste a ti misma/o que aún no has cumplido?","Escribe sobre lo que significa para ti sentirte bien contigo misma/o.","¿Qué es algo que aprecias de tu historia, aunque haya sido difícil?","¿Qué parte de ti se ha fortalecido con el tiempo?","¿Cómo reaccionas cuando alguien te decepciona?","Escribe sobre un momento en que tu intuición tuvo razón.","¿Qué necesitas para sentirte más en paz con tu presente?","¿Qué tipo de conversaciones te nutren?","¿Qué es lo más difícil de ser tú en este momento?","Escribe una carta a la persona que serás en diez años.","¿Qué te impide pedir lo que necesitas?","¿Cómo describirías tu forma de amar?","¿Qué te gustaría cambiar de cómo te relacionas con los demás?","Escribe sobre algo que solías temer y ya no te da miedo.","¿Qué es algo que necesitas decirte a ti misma/o hoy?","¿Cómo te sientes en tu hogar?","¿Qué aspecto de tu trabajo o estudio te genera satisfacción?","Escribe sobre una creencia que te ha limitado.","¿Qué sería diferente si creyeras más en ti misma/o?","¿Qué relación en tu vida necesita más atención?","¿Cuándo te sientes más viva/o y conectada/o?","Escribe sobre algo que te genera conflicto interno.","¿Qué es lo que más te cuesta aceptar de los demás?","¿Cómo manejas la crítica?","¿Qué necesita tu vida creativa?","Escribe sobre una meta que parece imposible y por qué la deseas.","¿Qué es algo que haces solo/a que te hace feliz?","¿Cómo reaccionas ante el fracaso?","¿Qué parte de tu historia te cuesta narrar?","Escribe sobre algo que hayas perdonado recientemente.","¿Qué significa el éxito para las personas que te rodean y cómo te afecta?","¿Qué es lo que más quieres sentir este mes?","¿Cómo cuidas tu salud mental?","Escribe sobre un momento en que fuiste valiente.","¿Qué es algo que nadie sabe de ti y desearías poder compartir?","¿Qué te hace única/o?","¿Cómo influye el pasado en tus decisiones actuales?","Escribe sobre lo que te da más energía en el día a día.","¿Qué es algo que amas de tu ciudad o lugar donde vives?","¿Cuándo te sientes más conectada/o con la naturaleza?","¿Qué le dirías a tu yo de la infancia?","Escribe sobre una persona que te haya amado sin condiciones.","¿Qué es algo que cambió en ti este año que no esperabas?","¿Cómo te sientes con respecto a tu pasado?","¿Qué tipo de persona quieres ser en tus relaciones?","Escribe sobre algo que encuentras hermoso en el mundo.","¿Qué te costaría dejar ir hoy?","¿Cómo defines la felicidad para ti en este momento?","¿Qué estás construyendo en silencio?","Escribe sobre una conversación que te cambió.","¿Qué es lo que más te une a las personas que amas?","¿Qué parte de ti sientes que la gente no ve?","¿Cómo te sientes cuando estás sola/o con tus pensamientos?","Escribe sobre algo que desearías haber dicho antes.","¿Qué quieres manifestar en tu vida?","¿Cómo reaccionas ante el cambio?","¿Qué es algo que siempre llevas contigo, aunque no sea físico?","Escribe sobre algo que estás aprendiendo sobre ti misma/o.","¿Qué es lo más generoso que alguien ha hecho por ti?","¿Qué harías si supieras que no puedes fallar?","¿Qué aspecto de tu vida necesita más intención?","Escribe sobre lo que significa para ti el hogar.","¿Qué es algo que desearías hacer diferente?","¿Cómo te sientes con respecto a tu crecimiento personal?","¿Qué te da más satisfacción: lograr algo o el proceso?","Escribe sobre un hábito que quieres construir desde hoy.","¿Qué significa para ti tener paz interior?","¿Cuándo fue la última vez que te sentiste verdaderamente orgullosa/o?","¿Qué es algo que admiras de ti misma/o pero rara vez reconoces?","Escribe sobre el tipo de vida que sueñas tener.","¿Qué te impide avanzar hacia donde quieres ir?","¿Cómo te sientes cuando alguien te pide ayuda?","¿Qué es lo más importante que has aprendido sobre el amor?","Escribe sobre algo que te sorprende de cómo has madurado.","¿Qué necesita cambiar en tu entorno para que te sientas mejor?","¿Qué parte de ti misma/o estás comenzando a entender mejor?","¿Cómo sería tu día ideal?","Escribe sobre algo que quieres experimentar antes de que acabe el año.","¿Qué es algo que ya no toleras y por qué?","¿Cómo cuidas tu energía?","¿Qué tipo de personas te elevan?","Escribe sobre una vez que escuchaste tu intuición y valió la pena.","¿Qué es lo que más agradeces de tu cuerpo?","¿Cómo equilibras tus necesidades con las de los demás?","¿Qué es algo que te da esperanza?","Escribe sobre lo que aprendiste de una relación que terminó.","¿Qué es algo que quieres hacer mejor en tus relaciones?","¿Cómo te imaginas a ti misma/o siendo anciana/o?","¿Qué es lo más hermoso de tu forma de ser?","Escribe sobre algo que te haga sentir que todo vale la pena.","¿Qué parte de ti misma/o has descubierto recientemente?","¿Qué es algo que hiciste ayer de lo que puedes estar orgullosa/o?","¿Cómo te sientes con la forma en que usas tu tiempo?","Escribe sobre algo que te costaría vivir sin ello.","¿Qué es lo que más te conecta con tu esencia?","¿Cómo es tu diálogo interno cuando cometes un error?","¿Qué quieres recordar de este período de tu vida?","Escribe sobre algo que te gustaría entender mejor de ti misma/o.","¿Qué defines como un buen día?","¿Qué es algo que temes que nunca se sepa de ti?","¿Cómo vives el presente?","Escribe sobre algo que te traiga calma inmediatamente.","¿Qué necesita tu vida social?","¿Qué es algo que haces con amor y dedicación?","¿Cómo afecta tu humor a tus decisiones?","Escribe sobre algo que estás comenzando a soltar.","¿Qué es lo que más valoras de tu historia?","¿Qué quieres que defina este capítulo de tu vida?","¿Cómo te sientes cuando eres honesta/o contigo misma/o?","Escribe sobre algo que quieres agradecer a tu cuerpo.","¿Qué es algo que aprendiste de alguien inesperado?","¿Cuándo fue la última vez que te sorprendiste a ti misma/o?","¿Qué parte de tu vida está floreciendo en este momento?","Escribe sobre algo que te gustaría explorar creativamente.","¿Qué necesita tu yo interior que estás ignorando?","¿Cómo te cuidas cuando todo se vuelve difícil?","¿Qué es algo que hace un año no habrías podido hacer?","Escribe sobre algo que te genera plenitud.","¿Qué significaría para ti vivir alineada/o con tus valores?","¿Qué es lo que más te cuesta admitir?","¿Cómo reaccionas cuando alguien te ama tal como eres?","Escribe sobre algo que te recuerda por qué sigues adelante.","¿Qué parte de tu vida te genera más conflicto?","¿Qué te falta para sentirte completa/o?","¿Cómo defines la vulnerabilidad?","Escribe sobre una experiencia que te ayudó a conocerte mejor.","¿Qué es algo que nunca te permites sentir y por qué?","¿Cómo sería tu vida si confiases plenamente en ti misma/o?","¿Qué parte de tu historia merece ser contada?","Escribe sobre algo en lo que has mejorado sin darte cuenta.","¿Qué necesitas para sentirte más segura/o?","¿Cómo manejas los momentos de soledad?","¿Qué es algo que desearías hacer con más frecuencia?","Escribe sobre algo que te genera orgullo al mirarte al espejo.","¿Qué le pides a esta semana que aún está por llegar?","¿Qué tipo de amor mereces?","¿Cómo te sientes cuando alguien te escucha de verdad?","Escribe sobre algo que te gustaría mejorar en tu comunicación.","¿Qué es algo que valoras de ti misma/o que no cambia?","¿Cómo estás ahora en comparación con hace seis meses?","¿Qué es lo que más te acerca a la versión de ti que admiras?","Escribe sobre algo que haces para reconectar contigo misma/o.","¿Qué es lo que más te da energía una mañana?","¿Qué necesitas dejar de exigirte?","¿Cómo sería tu vida ideal en lo cotidiano?","Escribe sobre algo que te haya dado una segunda oportunidad.","¿Qué es algo que agradeces de tu familia?","¿Cómo te sientes en relación con tus sueños actuales?","¿Qué parte de tu vida está lista para ser liberada?","Escribe sobre algo que desearías que alguien te hubiese enseñado antes.","¿Qué es lo que más te define como persona?","¿Cómo te sientes al final de un día difícil?","¿Qué es algo que te recuerda quién eres realmente?","Escribe sobre algo que te hace volver a creer en el mundo.","¿Qué necesitas de las relaciones que tienes?","¿Cómo es tu relación con el tiempo?","¿Qué aspecto de ti misma/o quieres mostrar más al mundo?","Escribe sobre algo que lleva tiempo creciendo en ti.","¿Qué es lo que más necesitas escuchar hoy?","¿Cómo quieres terminar este año?","¿Qué haría el día de hoy memorable?","Escribe sobre algo que, aunque sea pequeño, ya es un logro.","¿Qué es lo que más has aprendido sobre ti misma/o este año?","¿Cómo imaginas tu vida en equilibrio?","¿Qué es algo que la gente no sabe que haces y te enorgullece?","Escribe sobre algo que te hace sentir en casa, sin importar dónde estés.","¿Qué necesitas hoy que nadie más puede darte sino tú?","¿Cómo te relacionas con las críticas que te haces a ti misma/o?","¿Qué es lo más valioso que tienes?","¿Cuál fue el aprendizaje más importante de este mes?","¿Qué es algo que ya no te afecta como antes?","¿Cómo describirías tu relación con el descanso?","¿Qué parte de ti está lista para dar un paso adelante?","Escribe sobre algo que empezaste a apreciar con el tiempo.","¿Qué es lo que más quieres proteger de ti misma/o?","¿Cómo sabes cuándo estás feliz de verdad?","¿Qué estás dispuesta/o a esforzarte por conseguir?","Escribe sobre algo que quieres cultivar en ti misma/o.","¿Qué ves cuando te miras sin filtros?","¿Cómo influye la gratitud en tu día a día?","¿Qué es lo que más te cuesta comenzar?","Escribe sobre algo que te da fuerza cuando todo se siente difícil.","¿Qué harías diferente si empezaras hoy de cero?","¿Cómo te gustaría ser recordada/o?","¿Qué es algo que te gustaría que el mundo viera en ti?","Escribe sobre algo que llevas dentro que aún no has expresado.","¿Qué es lo que más te conecta con el presente?","¿Cómo defines el amor propio en tu vida diaria?","¿Qué es algo que hoy puedes hacer para estar bien contigo misma/o?"
+];
+
+const emotions = [
+  { symbol:'○', name:'Tranquila' },{ symbol:'◎', name:'Feliz' },
+  { symbol:'◑', name:'Melancólica' },{ symbol:'●', name:'Triste' },
+  { symbol:'△', name:'Ansiosa' },{ symbol:'◇', name:'Amada' },
+  { symbol:'◻', name:'Cansada' },{ symbol:'★', name:'Motivada' },
+];
+
+const loveMessages = [
+  "Eres suficiente exactamente como eres hoy.",
+  "Cada pequeño paso cuenta. Estás progresando.",
+  "Mereces el mismo amor que das a los demás.",
+  "No tienes que tenerlo todo resuelto. Solo hoy.",
+  "Tu sensibilidad es una fortaleza, no una debilidad.",
+  "Está bien no estar bien. Eso también pasa.",
+  "Eres más valiente de lo que crees.",
+  "Tu historia importa. Tu voz importa. Tú importas.",
+  "Confía en el proceso aunque no puedas verlo todavía.",
+  "Estás exactamente donde necesitas estar.",
+  "Lo que sientes es válido. Siempre.",
+  "Cuidarte no es egoísmo, es responsabilidad.",
+];
+
+const catColors = { personal:'#A8C5A0', salud:'#C99379', creatividad:'#7D7585', relaciones:'#FBB45E', trabajo:'#353B56' };
+
+// ====== PERSISTENCIA ======
+function save(key, val) {
+  try { localStorage.setItem('fgj_' + key, JSON.stringify(val)); } catch(e) {}
+}
+function load(key, fallback) {
+  try {
+    const v = localStorage.getItem('fgj_' + key);
+    return v !== null ? JSON.parse(v) : fallback;
+  } catch(e) { return fallback; }
+}
+
+// ====== ESTADO (cargado desde localStorage) ======
+let currentPromptIdx = 0;
+let currentEmotion   = null;
+let savedEntries  = load('entries',   []);
+let gratitudItems = load('gratitud',  []);
+let metas         = load('metas',     []);
+let emotionLog    = load('emotions',  []);
+let hoyDays       = load('hoyDays',   []);
+let selectedMood  = null;
+
+const moodSymbols = ['○','◑','◎','◉','●'];
+const moodLabels  = ['Difícil','Malo','Normal','Bueno','Genial'];
+const tabs = ['prompts','emociones','gratitud','metas','hoy'];
+
+// ====== INIT ======
+function init() {
+  const now = new Date();
+  document.getElementById('dayNum').textContent = now.getDate();
+  document.getElementById('dateRest').textContent = now.toLocaleDateString('es-ES',{weekday:'long',month:'long'});
+
+  const start = new Date(now.getFullYear(),0,0);
+  const doy = Math.floor((now - start) / 86400000);
+  currentPromptIdx = doy % prompts.length;
+  document.getElementById('promptNum').textContent = String(currentPromptIdx+1).padStart(3,'0');
+  document.getElementById('promptText').textContent = prompts[currentPromptIdx];
+
+  // Emotion grid
+  const grid = document.getElementById('emotionGrid');
+  emotions.forEach(e => {
+    const btn = document.createElement('button');
+    btn.className = 'emotion-btn';
+    btn.innerHTML = `<span class="emotion-symbol">${e.symbol}</span><span class="emotion-label">${e.name}</span>`;
+    btn.onclick = () => { document.querySelectorAll('.emotion-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); currentEmotion = e; };
+    grid.appendChild(btn);
+  });
+
+  // Hoy mood row
+  const row = document.getElementById('hoyMoodRow');
+  moodSymbols.forEach((sym,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'hoy-mood-btn';
+    btn.textContent = sym;
+    btn.title = moodLabels[i];
+    btn.onclick = () => { document.querySelectorAll('.hoy-mood-btn').forEach(b=>b.classList.remove('selected')); btn.classList.add('selected'); selectedMood = i; };
+    row.appendChild(btn);
+  });
+
+  document.getElementById('hoyDateLabel').textContent =
+    now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  document.getElementById('loveMessage').textContent = loveMessages[now.getDate() % loveMessages.length];
+
+  // Render todo lo guardado
+  renderEntries();
+  renderGratitud();
+  renderMetas();
+  renderEmotionLog();
+  renderHoyHistorial();
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+tab).classList.add('active');
+  btn.classList.add('active');
+  document.querySelectorAll('.bnav').forEach((b,i)=>b.classList.toggle('active',i===tabs.indexOf(tab)));
+}
+
+// ====== PROMPTS ======
+function newPrompt() {
+  let ni; do { ni = Math.floor(Math.random()*prompts.length); } while(ni===currentPromptIdx);
+  currentPromptIdx = ni;
+  const el = document.getElementById('promptText');
+  el.style.opacity=0;
+  setTimeout(()=>{ el.textContent=prompts[ni]; document.getElementById('promptNum').textContent=String(ni+1).padStart(3,'0'); el.style.transition='opacity 0.3s'; el.style.opacity=1; },150);
+  document.getElementById('promptAnswer').value='';
+}
+
+function saveEntry() {
+  const text = document.getElementById('promptAnswer').value.trim();
+  if(!text){showToast('Escribe algo primero');return;}
+  savedEntries.unshift({prompt:prompts[currentPromptIdx],text,date:new Date().toLocaleString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})});
+  save('entries', savedEntries);
+  document.getElementById('promptAnswer').value='';
+  renderEntries(); showToast('Entrada guardada');
+}
+
+function renderEntries() {
+  const sec = document.getElementById('savedSection');
+  if(!savedEntries.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  document.getElementById('savedList').innerHTML = savedEntries.map(e=>`
+    <div class="entry-item">
+      <div class="entry-prompt">${e.prompt}</div>
+      <div class="entry-text">${e.text}</div>
+      <div class="entry-date">${e.date}</div>
+    </div>`).join('');
+}
+
+// ====== EMOCIONES ======
+function logEmotion() {
+  if(!currentEmotion){showToast('Selecciona una emoción');return;}
+  const intensity = document.getElementById('intensitySlider').value;
+  const note = document.getElementById('emotionNote').value.trim();
+  const time = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  const entry = { symbol: currentEmotion.symbol, name: currentEmotion.name, note, intensity, time };
+  emotionLog.unshift(entry);
+  save('emotions', emotionLog);
+  document.getElementById('intensitySlider').value=5;
+  document.getElementById('intensityVal').textContent='5 / 10';
+  document.getElementById('emotionNote').value='';
+  document.querySelectorAll('.emotion-btn').forEach(b=>b.classList.remove('selected'));
+  currentEmotion=null;
+  renderEmotionLog();
+  showToast('Emoción registrada');
+}
+
+function renderEmotionLog() {
+  const sec = document.getElementById('emotionLogSection');
+  const log = document.getElementById('emotionLog');
+  if(!emotionLog.length){ sec.style.display='none'; return; }
+  sec.style.display='block';
+  log.innerHTML = emotionLog.map(e=>`
+    <div class="log-item">
+      <span class="log-symbol">${e.symbol}</span>
+      <div class="log-info">
+        <div class="log-name">${e.name}</div>
+        ${e.note?`<div class="log-note">${e.note}</div>`:''}
+      </div>
+      <div class="log-bar"><div class="log-fill" style="width:${e.intensity*10}%"></div></div>
+      <span class="log-time">${e.time}</span>
+    </div>`).join('');
+}
+
+// ====== GRATITUD ======
+function addGratitud() {
+  const input = document.getElementById('gratitudInput');
+  const text = input.value.trim();
+  if(!text)return;
+  gratitudItems.push(text); input.value='';
+  save('gratitud', gratitudItems);
+  renderGratitud(); showToast('Añadida');
+}
+
+function removeGratitud(i) {
+  gratitudItems.splice(i,1);
+  save('gratitud', gratitudItems);
+  renderGratitud();
+}
+
+function renderGratitud() {
+  document.getElementById('gratitudCount').textContent = gratitudItems.length;
+  const list = document.getElementById('gratitudList');
+  if(!gratitudItems.length){ list.innerHTML=`<div class="empty"><p>¿Por qué estás agradecida/o hoy?</p></div>`; return; }
+  list.innerHTML = gratitudItems.map((g,i)=>`<li class="grat-item"><span class="grat-n">${i+1}.</span><span class="grat-text">${g}</span><button class="del-btn" onclick="removeGratitud(${i})">✕</button></li>`).join('');
+}
+
+// ====== METAS ======
+function addMeta() {
+  const name = document.getElementById('metaName').value.trim();
+  const category = document.getElementById('metaCategory').value;
+  if(!name){showToast('Escribe tu meta');return;}
+  metas.push({name,category,progress:0}); document.getElementById('metaName').value='';
+  save('metas', metas);
+  renderMetas(); showToast('Meta añadida');
+}
+
+function updateProgress(i,delta) {
+  metas[i].progress=Math.min(100,Math.max(0,metas[i].progress+delta));
+  save('metas', metas);
+  renderMetas();
+}
+
+function deleteMeta(i) {
+  metas.splice(i,1);
+  save('metas', metas);
+  renderMetas();
+}
+
+function renderMetas() {
+  const list = document.getElementById('metaList');
+  if(!metas.length){ list.innerHTML=`<div class="empty"><p>Define tu primera intención.</p></div>`; return; }
+  list.innerHTML = metas.map((m,i)=>`
+    <div class="meta-item">
+      <div class="meta-head">
+        <div class="meta-dot" style="background:${catColors[m.category]}"></div>
+        <span class="meta-name-text">${m.name}</span>
+        <span class="meta-cat-tag">${m.category}</span>
+        <button class="del-btn" onclick="deleteMeta(${i})" style="margin-left:auto">✕</button>
+      </div>
+      <div class="progress-row"><div class="prog-track"><div class="prog-fill" style="width:${m.progress}%;background:${catColors[m.category]}"></div></div><span class="prog-pct">${m.progress}%</span></div>
+      <div class="meta-controls">
+        <button class="meta-btn" onclick="updateProgress(${i},-10)">− 10%</button>
+        <button class="meta-btn" onclick="updateProgress(${i},+10)">+ 10%</button>
+        <button class="meta-btn done-btn" onclick="updateProgress(${i},100)">${m.progress===100?'Completada':'Marcar lista'}</button>
+      </div>
+    </div>`).join('');
+}
+
+// ====== MI DÍA ======
+function saveHoy() {
+  const titulo = document.getElementById('hoyTitulo').value.trim();
+  const texto  = document.getElementById('hoyTexto').value.trim();
+  if (!titulo && !texto) { showToast('Escribe algo sobre tu día'); return; }
+  const now = new Date();
+  hoyDays.unshift({
+    titulo: titulo || 'Sin título',
+    texto,
+    mood: selectedMood !== null ? moodSymbols[selectedMood] : null,
+    moodLabel: selectedMood !== null ? moodLabels[selectedMood] : '',
+    date: now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'}),
+    time: now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})
+  });
+  save('hoyDays', hoyDays);
+  document.getElementById('hoyTitulo').value = '';
+  document.getElementById('hoyTexto').value  = '';
+  document.querySelectorAll('.hoy-mood-btn').forEach(b=>b.classList.remove('selected'));
+  selectedMood = null;
+  renderHoyHistorial();
+  showToast('Día guardado');
+}
+
+function deleteHoy(i) {
+  hoyDays.splice(i,1);
+  save('hoyDays', hoyDays);
+  renderHoyHistorial();
+}
+
+function renderHoyHistorial() {
+  const el = document.getElementById('hoyHistorial');
+  if (!hoyDays.length) { el.innerHTML=''; return; }
+  el.innerHTML = `<div class="card-label" style="margin:20px 0 8px">Días anteriores</div><div class="card">` +
+    hoyDays.map((d,i) => `
+      <div class="hoy-entry">
+        <div class="hoy-entry-head">
+          <span class="hoy-entry-date">${d.date}</span>
+          <span style="display:flex;align-items:center;gap:10px">
+            ${d.mood ? `<span class="hoy-entry-mood" title="${d.moodLabel}">${d.mood}</span>` : ''}
+            <button class="del-btn" onclick="deleteHoy(${i})">✕</button>
+          </span>
+        </div>
+        <div class="hoy-entry-titulo">${d.titulo}</div>
+        ${d.texto ? `<div class="hoy-entry-texto">${d.texto}</div>` : ''}
+      </div>`).join('') + `</div>`;
+}
+
+// ====== TOAST ======
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+init();
+</script>
+</body>
+</html>
